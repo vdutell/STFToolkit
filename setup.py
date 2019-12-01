@@ -6,5 +6,6 @@ setup(name='stftoolkit',
       author='Vasha DuTell',
       author_email='vashadutell@gmail.com',
       url='https://github.com/vdutell/STFToolkit',
+      install_requires=['numpy'],
       packages=find_packages()
       )
