@@ -86,15 +86,15 @@ def cubify(arr, newshape):
     return new
 
 
-def st_ps(movie, cosine_window=True, rm_dc=True):
+def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=True):
     '''
     Calculate the spatiotemporal power spectrum of a movie.
     
     Parameters
     ----------
     movie:      list of 3d numpy arrays definig movie for 3d fourier transform analysis.
-    ##fps:        frames per second of movie capture
     ##ppd:        pixels per degree of frames
+    ##fps:        frames per second of movie capture
     
     Returns:
     --------
@@ -105,6 +105,7 @@ def st_ps(movie, cosine_window=True, rm_dc=True):
     
     '''
     
+
     #remove color channel if needed
     if(len(np.shape(movie)) > 3):
         movie = np.mean(movie,axis=-1)
@@ -135,7 +136,7 @@ def st_ps(movie, cosine_window=True, rm_dc=True):
     if(rm_dc):
         ps_3d = ps_3d[1:, 1:, 1:]
         ps_2d = ps_2d[1:, 1:]
-        fqs_space = fqs_space[1:]
-        fqs_time = fqs_time[1:]
+        fqs_space = fqs_space[1:]*ppd
+        fqs_time = fqs_time[1:]*fps
     
     return(ps_3d, ps_2d, fqs_space, fqs_time)

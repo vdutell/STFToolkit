@@ -103,10 +103,11 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 7, minmaxcolors=(N
         axes_space.semilogx(fqspace, power_spectrum[:,tf_idx],
                         label='{0:0.1f} Hz'.format(fqtime[tf_idx]),
                         c=timecolors[i])
-    
-    if(show_onef_line):
-        axes_space.plot(fqspace[1:],1e-80/(fqspace[1:]),c='black') # 1/f line
-        axes_space.plot(fqspace[1:],1e-80/(fqspace[1:]**2),c='black') # 1/f^2 line
+        
+    #print(np.log(np.max(power_spectrum)/fqspace))
+    #if(show_onef_line):
+        #axes_space.semilogx(fqspace,np.max(power_spectrum)/(fqspace),c='black') # 1/f line
+        #axes_space.semilogx(fqspace,np.max(power_spectrum)/(fqspace**2),c='black') # 1/f^2 line
     
     axes_space.set_title('Spatial Frequency')
     axes_space.set_xlabel('cpd')
@@ -123,13 +124,13 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 7, minmaxcolors=(N
                        label='{0:0.1f} cpd'.format(fqspace[sf_idx]),
                        c=spacecolors[i])
         
-    if(show_onef_line):    
-        axes_time.plot(fqtime[1:],1e4/(fqtime[1:]),c='black') # 1/f line
-        axes_time.plot(fqtime[1:],1e7/(fqtime[1:]**2),c='black') # 1/f^2 line
+    #if(show_onef_line):    
+    #    axes_time.plot(fqtime[1:],1e4/(fqtime[1:]),c='black') # 1/f line
+    #    axes_time.plot(fqtime[1:],1e7/(fqtime[1:]**2),c='black') # 1/f^2 line
         
     axes_time.set_title('Temporal Frequency')
     axes_time.set_xlabel('Hz')
-    axes_time.set_ylabel(f'Log Power') 
+    axes_time.set_ylabel(f'Log Power')
     axes_time.set_xlim(fqtime[1],fqtime[-1])
     axes_time.set_ylim(bottom=minc) #, top= maxc)
     axes_time.xaxis.set_major_formatter(mpl.ticker.FormatStrFormatter('%d'))
