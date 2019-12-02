@@ -14,4 +14,3 @@ Toolkit of methods for analyzing and displaying data using the joint spatiotempo
 ## About
 
 This codebase is maintained by Vasha DuTell, a PhD student at UC Berkeley in Bruno Olshausen's lab. Analyzing natural movies has been a large part of my PhD work, so I put this package together to keep usefull code for running this type of analysis organized and in once place, and hoping it can be usefull to other people. 
-
