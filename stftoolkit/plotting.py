@@ -8,7 +8,7 @@ import matplotlib.colors as colors
 __all__ = ['da_plot_power',
            'plot_velocity_spec']
 
-def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 7, minmaxcolors=(None, None), figname='nameless', saveloc='./output', logscale=True, show_onef_line=False):
+def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(None, None), figname='Plot', saveloc='./output', logscale=True, show_onef_line=True):
     '''
     THE Dong & Attick Plot (Dong & Attick 1995; fig 7) with heatmap added.
     Produces three plots:
@@ -36,6 +36,9 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 7, minmaxcolors=(N
         freqtime
 
     '''
+    #dims got a little messed up. This is the quickest fix. Later go in and change idxs in code.
+    #power_spectrum = power_spectrum.T
+    
     #calculate sampling positions
     #space
     space_end_offset = 1
@@ -52,7 +55,7 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 7, minmaxcolors=(N
     timesamplefqs_idx = np.round(np.geomspace(time_end_offset, time_end_sample,
                                      nsamples),0).astype(int)
 
-    spacecolors = np.array(['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'])#[::-1]
+    spacecolors = np.array(['red', 'orange', 'green', 'blue', 'indigo'])#[::-1]
     timecolors = spacecolors
 
     #make a grid
@@ -67,17 +70,18 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 7, minmaxcolors=(N
     #heatmap
     axes_hm = plt.subplot(grid_hm[0])
     
-    power_spectrum = np.log10(power_spectrum)
+    #take log
+    #power_spectrum = np.log10(power_spectrum)
     
     if(minmaxcolors[0]):
         minc = np.log10(np.abs(minmaxcolors[0]))
         maxc = np.log10(np.abs(minmaxcolors[1]))
     else:
-        minc = np.min(power_spectrum)
-        maxc = np.max(power_spectrum)
+        minc = np.min(np.log10(power_spectrum))
+        maxc = np.max(np.log10(power_spectrum))
 
     clev = np.arange(minc,maxc,0.5)
-    hm = axes_hm.contourf(fqtime, fqspace, power_spectrum,
+    hm = axes_hm.contourf(fqtime, fqspace, np.log10(power_spectrum),
                           clev,
                           cmap='gray',
                           norm=mpl.colors.Normalize(minc, maxc))
@@ -100,45 +104,54 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 7, minmaxcolors=(N
     #spaceplot
     axes_space = plt.subplot(grid_space[0])
     for i, tf_idx in enumerate(timesamplefqs_idx):
-        axes_space.semilogx(fqspace, power_spectrum[:,tf_idx],
+        axes_space.loglog(fqspace, power_spectrum[:,tf_idx],
                         label='{0:0.1f} Hz'.format(fqtime[tf_idx]),
                         c=timecolors[i])
-        
+    
     #print(np.log(np.max(power_spectrum)/fqspace))
-    #if(show_onef_line):
-        #axes_space.semilogx(fqspace,np.max(power_spectrum)/(fqspace),c='black') # 1/f line
-        #axes_space.semilogx(fqspace,np.max(power_spectrum)/(fqspace**2),c='black') # 1/f^2 line
+    if(show_onef_line):
+        fqs = fqspace[space_end_offset:space_end_sample]
+        onef = 1/(fqs) * np.min(power_spectrum[:,timesamplefqs_idx[-1]])
+        onef2 = 1/(fqs)**2 * np.max(power_spectrum[:,timesamplefqs_idx[0]])
+        axes_space.loglog(fqs, onef, c='black')
+        axes_space.plot(fqs, onef2, c='black')
     
     axes_space.set_title('Spatial Frequency')
     axes_space.set_xlabel('cpd')
-    axes_space.set_ylabel(f'Log Power')
-    axes_space.set_xlim(fqspace[1],fqspace[-1])
-    axes_space.set_ylim(bottom=minc) #, top=maxc)
+    axes_space.set_ylabel(f'Power')
+    #axes_space.set_xlim(fqspace[1],fqspace[-1])
+    #axes_space.set_ylim(bottom=minc) #, top=maxc)
     axes_space.xaxis.set_major_formatter(mpl.ticker.FormatStrFormatter('%d'))
     axes_space.legend(fontsize=8)
 
     #timeplot
     axes_time = plt.subplot(grid_time[0])
     for i, sf_idx in enumerate(spacesamplefqs_idx):
-        axes_time.semilogx(fqtime, power_spectrum[sf_idx,:],
+        axes_time.loglog(fqtime, power_spectrum[sf_idx,:],
                        label='{0:0.1f} cpd'.format(fqspace[sf_idx]),
                        c=spacecolors[i])
         
-    #if(show_onef_line):    
-    #    axes_time.plot(fqtime[1:],1e4/(fqtime[1:]),c='black') # 1/f line
-    #    axes_time.plot(fqtime[1:],1e7/(fqtime[1:]**2),c='black') # 1/f^2 line
+    if(show_onef_line):
+        fqs = fqtime[time_end_offset:time_end_sample]
+        onef = 1/(fqs) * np.min(power_spectrum[:,timesamplefqs_idx[-1]])
+        onef2 = 1/(fqs)**2 * np.max(power_spectrum[:,timesamplefqs_idx[0]])
+        axes_time.loglog(fqs, onef, c='black')
+        axes_time.plot(fqs, onef2, c='black')
         
     axes_time.set_title('Temporal Frequency')
     axes_time.set_xlabel('Hz')
-    axes_time.set_ylabel(f'Log Power')
-    axes_time.set_xlim(fqtime[1],fqtime[-1])
-    axes_time.set_ylim(bottom=minc) #, top= maxc)
+    axes_time.set_ylabel(f'Power')
+    #axes_time.set_xlim(fqtime[1],fqtime[-1])
+    #axes_time.set_ylim(bottom=minc) #, top= maxc)
     axes_time.xaxis.set_major_formatter(mpl.ticker.FormatStrFormatter('%d'))
     axes_time.legend(fontsize=8)
 
     plt.tight_layout()
     
     plt.savefig(f'{saveloc}/Power_{figname}.png')
+    
+    
+
 
     
 def plot_velocity_spec(velocity_vals, velocity_spec, label):
