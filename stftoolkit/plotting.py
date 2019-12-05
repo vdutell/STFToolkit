@@ -8,7 +8,7 @@ import matplotlib.colors as colors
 __all__ = ['da_plot_power',
            'plot_velocity_spec']
 
-def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(None, None), figname='Plot', saveloc='./output', logscale=True, show_onef_line=True):
+def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(None, None), figname='Plot', saveloc='./output', logscale=True, show_onef_line=True, grey_contour=True):
     '''
     THE Dong & Attick Plot (Dong & Attick 1995; fig 7) with heatmap added.
     Produces three plots:
@@ -81,11 +81,15 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(N
         maxc = np.max(np.log10(power_spectrum))
 
     clev = np.arange(minc,maxc,0.5)
-    hm = axes_hm.contourf(fqtime, fqspace, np.log10(power_spectrum),
-                          clev,
-                          cmap='gray',
-                          norm=mpl.colors.Normalize(minc, maxc))
-    
+    if(grey_contour):
+        hm = axes_hm.contourf(fqtime, fqspace, np.log10(power_spectrum),
+                              clev,
+                              cmap='gray',
+                              norm=mpl.colors.Normalize(minc, maxc))
+    else:
+        hm = axes_hm.contourf(fqtime, fqspace, np.log10(power_spectrum),
+                              clev,
+                              norm=mpl.colors.Normalize(minc, maxc))    
     if(logscale):
         axes_hm.set_xscale("log") 
         axes_hm.set_yscale("log")
