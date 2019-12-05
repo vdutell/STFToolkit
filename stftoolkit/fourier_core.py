@@ -86,7 +86,7 @@ def cubify(arr, newshape):
     return new
 
 
-def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=True):
+def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=False):
     '''
     Calculate the spatiotemporal power spectrum of a movie.
     
@@ -139,4 +139,4 @@ def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=True):
         fqs_space = fqs_space[1:]*ppd
         fqs_time = fqs_time[1:]*fps
     
-    return(ps_3d, ps_2d, fqs_space, fqs_time)
+    return(ps_3d, ps_2d.T, fqs_space, fqs_time)
