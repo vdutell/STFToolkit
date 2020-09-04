@@ -8,7 +8,7 @@ import matplotlib.colors as colors
 __all__ = ['da_plot_power',
            'plot_velocity_spec']
 
-def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(None, None), figname='Plot', saveloc='./output', logscale=True, show_onef_line=True, grey_contour=True):
+def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(None, None), figname='Plot', saveloc='./output', logscale=True, show_onef_line=True, grey_contour=True, vector_save=False, legend_loc=0):
     '''
     THE Dong & Attick Plot (Dong & Attick 1995; fig 7) with heatmap added.
     Produces three plots:
@@ -55,11 +55,11 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(N
     timesamplefqs_idx = np.round(np.geomspace(time_end_offset, time_end_sample,
                                      nsamples),0).astype(int)
 
-    spacecolors = np.array(['red', 'orange', 'green', 'blue', 'indigo'])#[::-1]
+    spacecolors = np.array(['saddlebrown','brown', 'chocolate', 'darkgoldenrod','orange', 'gold','yellow'])#[::-1]
     timecolors = spacecolors
 
     #make a grid
-    fig = plt.figure(figsize=(10,6))
+    fig = plt.figure(figsize=(8,5))
     full_grid = gsp.GridSpec(2,3)
     
     #layout of subplots
@@ -74,11 +74,14 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(N
     #power_spectrum = np.log10(power_spectrum)
     
     if(minmaxcolors[0]):
+        print(f'minmaxcolors [0] is predefined: {minmaxcolors[0]},{minmaxcolors[1]}')
         minc = np.log10(np.abs(minmaxcolors[0]))
         maxc = np.log10(np.abs(minmaxcolors[1]))
     else:
+        #will fail here if you have nan values in power spectrum
         minc = np.min(np.log10(power_spectrum))
         maxc = np.max(np.log10(power_spectrum))
+        print(f'Cacluated Min/Max Colors: {minc}, {maxc}')
 
     clev = np.arange(minc,maxc,0.5)
     if(grey_contour):
@@ -96,7 +99,11 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(N
     axes_hm.set_xlabel('Hz')
     axes_hm.set_ylabel('cycles/deg')
     axes_hm.set_title(f'{figname} Log Power') 
-    plt.colorbar(hm)
+    
+    cb = plt.colorbar(hm)
+    tick_locator = mpl.ticker.MaxNLocator(nbins=5)
+    cb.locator = tick_locator
+    cb.update_ticks()
 
     #add lines
     for s in range(nsamples):
@@ -109,7 +116,7 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(N
     axes_space = plt.subplot(grid_space[0])
     for i, tf_idx in enumerate(timesamplefqs_idx):
         axes_space.loglog(fqspace, power_spectrum[:,tf_idx],
-                        label='{0:0.1f} Hz'.format(fqtime[tf_idx]),
+                        label='{0:.0f} Hz'.format(fqtime[tf_idx]),
                         c=timecolors[i])
     
     #print(np.log(np.max(power_spectrum)/fqspace))
@@ -124,9 +131,9 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(N
     axes_space.set_xlabel('cpd')
     axes_space.set_ylabel(f'Power')
     #axes_space.set_xlim(fqspace[1],fqspace[-1])
-    #axes_space.set_ylim(bottom=minc) #, top=maxc)
+    #axes_space.set_ylim(bottom=minc, top=maxc)
     axes_space.xaxis.set_major_formatter(mpl.ticker.FormatStrFormatter('%d'))
-    axes_space.legend(fontsize=8)
+    axes_space.legend(fontsize=8,loc=legend_loc)
 
     #timeplot
     axes_time = plt.subplot(grid_time[0])
@@ -148,17 +155,16 @@ def da_plot_power(power_spectrum, fqspace, fqtime, nsamples = 5, minmaxcolors=(N
     #axes_time.set_xlim(fqtime[1],fqtime[-1])
     #axes_time.set_ylim(bottom=minc) #, top= maxc)
     axes_time.xaxis.set_major_formatter(mpl.ticker.FormatStrFormatter('%d'))
-    axes_time.legend(fontsize=8)
+    axes_time.legend(fontsize=8,loc=legend_loc)
 
     plt.tight_layout()
     
     plt.savefig(f'{saveloc}/Power_{figname}.png')
     
+    if(vector_save):
+        plt.savefig(f'{saveloc}/Power_{figname}.eps',format='eps')
     
-
-
-    
-def plot_velocity_spec(velocity_vals, velocity_spec, label):
+def plot_velocity_spec(velocity_vals, velocity_spec, label, log_v = False):
     """
     Plotter for velocity spectra
     
@@ -166,16 +172,21 @@ def plot_velocity_spec(velocity_vals, velocity_spec, label):
         velocity spectrum: 1d numpy array of velocity values (bins)
         velocity vals: 1d numpy array mean amplitude at each velocity value (size must match velocity_spectrum)
         label: label for plot
+        log_v: should x axis (velocity) be in log space?
         
     Returns:
         figure: matplotlib figure plotted
     """
-
-    p = plt.loglog(velocity_vals,
-             velocity_spec,
-             'o-',
-             label=label)
-
+    if(log_v):
+        p = plt.loglog(velocity_vals,
+                 velocity_spec,
+                 'o-',
+                 label=label)
+    else:
+        p = plt.semilogy(velocity_vals,
+                 velocity_spec,
+                 'o-',
+                 label=label)
     plt.legend()
     plt.xlabel('Velocity (degrees/sec)')
     plt.ylabel('Mean Power')
