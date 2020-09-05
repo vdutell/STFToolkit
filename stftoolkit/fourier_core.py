@@ -2,6 +2,12 @@ import numpy as np
 import cupy as cp
 import time
 
+#support for multiprocessing to speed up azimuthal average binning 
+import multiprocessing
+from joblib import Parallel, delayed
+num_cores = multiprocessing.cpu_count()
+
+
 # for import plotting.* don't import the things above globally
 __all__ = ['cos_filter_3d',
            'azimuthalAverage',
@@ -50,7 +56,7 @@ def mask_angle_wedge(direction_angle, indices, width=np.pi/4):
     return(keep_angles_mask)
 
 
-def azimuthalAverage(image, nyquist, angles='all', center=None, bin_in_log=False):
+def azimuthalAverage(image, nyquist, angles='all', center=None, bin_in_log=False, return_fqs=True):
     """      
     Calculate the azimuthally averaged radial profile. (Intended for 2d Power Spectra)
     image - The 2D image (2d power spectrum)
@@ -125,8 +131,10 @@ def azimuthalAverage(image, nyquist, angles='all', center=None, bin_in_log=False
     for i in range(num_bins):
         binmean[i] = np.mean(image[np.where(r_binned==(i))])
 
-    return(binmean, bin_centers)
-
+    if(return_fqs):
+        return(binmean, bin_centers)
+    else:
+        return(binmean)
 
 def cubify(arr, newshape):
     '''
@@ -150,7 +158,7 @@ def cubify(arr, newshape):
     return new
 
 
-def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=False, bin_in_log=False, use_cupy_fft=True):
+def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=False, bin_in_log=False, use_cupy_fft=True, parallelize_azmaverage=True):
     '''
     Calculate the spatiotemporal power spectrum of a movie.
     
@@ -187,12 +195,10 @@ def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=False, bin_in_log=False
     
     #3d ft
     #option to use GPU accellerated
-    stime = time.time()
     if(use_cupy_fft):
         ps_3d = cp.asnumpy(cp.fft.fftshift(cp.abs(cp.fft.fftn(cp.asarray(movie))**2)))
     else:
         ps_3d = np.fft.fftshift(np.abs(np.fft.fftn(movie))**2)
-    print(f'Time to compute GPU={use_cupy_fft}: {time.time()-stime}')
     
     fqs_time = np.fft.rfftfreq(np.shape(movie)[0])
     
@@ -200,13 +206,27 @@ def st_ps(movie, ppd=1, fps=1, cosine_window=True, rm_dc=False, bin_in_log=False
     #we do this for multi8ple different angle sections [all, vert, horizl l_diag, r_diag]
     angles = ['all','vert','horiz','l_diag','r_diag']
     ps_2ds = [[] for _ in range(len(angles))]
-    for i, angle in enumerate(angles):
-        for f in range(len(fqs_time)):
-            #take only the second half (real part)
-            ps, fqs_space = azimuthalAverage(ps_3d[len(fqs_time)-2+f,:,:], max(fqs_time), angles=angle,bin_in_log=bin_in_log)
+        
+    if(parallelize_azmaverage):
+        #Parallel implemetation
+        for i, angle in enumerate(angles):
+            ps = Parallel(n_jobs=num_cores)(delayed(azimuthalAverage)(ps_3d[len(fqs_time)-2+f,:,:], max(fqs_time), angles=angle, bin_in_log=bin_in_log, return_fqs=False) for f in range(len(fqs_time)))
             ps_2ds[i].append(ps)
-    ps_2ds = [np.array(ps_2d).T for ps_2d in ps_2ds] #spatial as first dim, temporal as second
-    
+            #RUN AN EXTRA TIME TO GET FREQUENCIES
+            _, fqs_space = azimuthalAverage(ps_3d[-1,:,:], max(fqs_time), angles=angle, bin_in_log=bin_in_log)
+        ps_2ds = [np.array(ps_2d[0]).T for ps_2d in ps_2ds] #spatial as first dim, temporal as second
+
+    else:
+        #NON Parallel implemetation
+        for i, angle in enumerate(angles):
+            for f in range(len(fqs_time)):
+                #take only the second half (real part)
+                ps, fqs_space = azimuthalAverage(ps_3d[len(fqs_time)-2+f,:,:], max(fqs_time), angles=angle,bin_in_log=bin_in_log)
+                ps_2ds[i].append(ps)
+                 
+        ps_2ds = [np.array(ps_2d).T for ps_2d in ps_2ds] #spatial as first dim, temporal as second
+
+
     fqs_space = fqs_space*ppd
     fqs_time = fqs_time*fps
 
